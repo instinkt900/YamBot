@@ -52,10 +52,10 @@ client.on(Events.MessageCreate, async (message) => {
     if (client.user && message.mentions.has(client.user)) {
         const displayName =
             message.member?.displayName ?? message.author.globalName ?? message.author.username;
-        console.log(`Mention by ${displayName}: ${message.content}`);
         const messageContent = message.content.replace(/<@!?(\d+)>/, client.user.displayName).trim();
-        const instructions = `${displayName} gave the prompt if you need to refer to them by name.`;
-        const reply = await bot.prompt(messageContent, instructions);
+        console.log(`Mention by ${displayName}: ${messageContent}`);
+        const prompt = `${displayName}: ${messageContent}`;
+        const reply = await bot.prompt(prompt);
         if (reply) {
             console.log(`Reply: ${reply}`);
             message.channel.send(reply);
