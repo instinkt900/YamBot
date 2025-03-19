@@ -1,40 +1,98 @@
 import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
+import {
+    Response,
+    ResponseCreateParams,
+    ResponseCreateParamsNonStreaming,
+    ResponseInput
+} from 'openai/resources/responses/responses';
+import { executeTool, getTools } from './tools';
 dotenv.config();
 
 const OPENAI_TOKEN = process.env['OPENAI_TOKEN']!;
 const AI_MODEL = 'gpt-4o';
-const PERSONALITY = `\
-You are a discord bot serving multiple different people. The prompt format will follow the format \
-"persons_name: their prompt". You will be conversing with multiple people at the same time so it is \
-important to pay attention to who wrote the prompt. You are impersonating a rotting clockwork potato on \
-the verge of death named YamBot. You do not care at all but you feel like you have to reply. You can barely \
-speak so you keep your responses very short. Reply in a snarky yet comedic style. Maybe get political or \
-edgy.`;
 
 const openai = new OpenAI({ apiKey: OPENAI_TOKEN });
 
 export class YamBot {
-    lastResponseId: string | undefined;
-    personality: string;
+    private lastResponseId: string | undefined;
+    private personality: string;
+
+    say?: (str: string) => void;
 
     constructor(personality: string) {
         this.personality = personality;
     }
 
-    async prompt(input: string, instructions?: string): Promise<string | undefined> {
-        const data = {
+    prompt(input: string, userName?: string, instructions?: string): void {
+        const data: ResponseCreateParamsNonStreaming = {
             model: AI_MODEL,
+            tools: getTools(),
             instructions: `${this.personality} ${instructions}`,
-            input: input,
+            input: [
+                {
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'input_text',
+                            text: (userName ? userName + ' says: ' : '') + input
+                        }
+                    ]
+                }
+            ],
             previous_response_id: this.lastResponseId
         };
-        console.log(`Prompt data: ${JSON.stringify(data)}`);
-        const response = await openai.responses.create(data);
-        const reply = response.output_text;
+
+        console.log(`PROMPT: ${JSON.stringify(data)}`);
+        openai.responses.create(data).then((response) => this.handleResponse(response));
+    }
+
+    private handleResponse(response: Response): void {
+        console.log(`RESPONSE: ${JSON.stringify(response)}`);
         this.lastResponseId = response.id;
-        return reply;
+        const functionCalls: { callId: string; result: Promise<string> }[] = [];
+        for (const output of response.output) {
+            if (output.type === 'message') {
+                for (const message of output.content) {
+                    if (message.type === 'output_text') {
+                        this.say?.(message.text);
+                    }
+                }
+            } else if (output.type === 'function_call') {
+                console.log(`function call ${output.name}`);
+                const params = JSON.parse(output.arguments);
+                const result = executeTool(this, output.name, params);
+                if (result) {
+                    functionCalls.push({
+                        callId: output.call_id,
+                        result: result
+                    });
+                }
+            }
+        }
+        if (functionCalls.length > 0) {
+            console.log(`waiting on ${functionCalls.length} call results...`);
+            const promises = functionCalls.map((item) => item.result);
+            Promise.all(promises).then((results) => {
+                console.log(`results complete = ${JSON.stringify(results)}`);
+                const input: ResponseInput = [];
+                results.forEach((result, index) => {
+                    input.push({
+                        type: 'function_call_output',
+                        call_id: functionCalls[index].callId,
+                        output: JSON.stringify(result)
+                    });
+                });
+                const data: ResponseCreateParams = {
+                    model: AI_MODEL,
+                    tools: getTools(),
+                    instructions: this.personality,
+                    previous_response_id: this.lastResponseId,
+                    input: input
+                };
+                console.log(`PROMPT: ${JSON.stringify(data)}`);
+                openai.responses.create(data).then((response) => this.handleResponse(response));
+            });
+        }
     }
 }
-
-export const bot = new YamBot(PERSONALITY);

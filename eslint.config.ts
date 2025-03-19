@@ -5,6 +5,19 @@ import prettierPluginRecommended from 'eslint-plugin-prettier/recommended';
 export default tseslint.config(
     eslint.configs.recommended,
     tseslint.configs.recommended,
-    prettierPluginRecommended
+    prettierPluginRecommended,
+    {
+        files: ['src/**/*.ts'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_'
+                }
+            ]
+        }
+    }
 );
-
