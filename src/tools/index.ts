@@ -1,6 +1,9 @@
 import { Tool } from 'openai/resources/responses/responses';
 import { GetTestTool } from './get_test';
 import { YamBot } from '../bot';
+import { DoNothingTool } from './do_nothing';
+import { TalkTool } from './talk';
+import { AddReminderTool, ClearRemindersTool, GetRemindersTool } from './reminder';
 
 export interface BotToolParameter {
     type: string;
@@ -10,11 +13,16 @@ export interface BotToolParameter {
 export interface BotTool {
     get description(): string;
     get parameters(): { [key: string]: BotToolParameter };
-    execute(bot: YamBot, ...args: any[]): Promise<string> | undefined;
+    execute(bot: YamBot, ...args: any[]): Promise<string>;
 }
 
 const activeTools: Record<string, BotTool> = {
-    getTest: GetTestTool
+    // getTest: GetTestTool,
+    doNothing: DoNothingTool,
+    talk: TalkTool,
+    addReminder: AddReminderTool,
+    getReminders: GetRemindersTool,
+    clearReminders: ClearRemindersTool
 };
 
 export function getTools(): Array<Tool> {
@@ -36,11 +44,11 @@ export function getTools(): Array<Tool> {
     return tools;
 }
 
-export function executeTool(
+export async function executeTool(
     bot: YamBot,
     toolName: string,
     args: { [key: string]: any }
-): Promise<string> | undefined {
+): Promise<string> {
     const tool = activeTools[toolName];
     if (tool) {
         const params = [];
@@ -50,12 +58,12 @@ export function executeTool(
                 console.log(
                     `Tried calling tool ${toolName} with incorrect parameters. Got ${JSON.stringify(args)}`
                 );
-                return;
+                return '';
             }
             params.push(args[paramName]);
         }
         return tool.execute(bot, ...params);
     }
     console.log(`Unknown tool call: ${toolName}`);
-    return;
+    return '';
 }

@@ -11,8 +11,8 @@ class GetTestToolImpl implements BotTool {
             second_value: { type: 'number', description: 'the second input' }
         };
     }
-    execute(bot: YamBot, first: string, second: number): Promise<string> {
-        return new Promise((resolve) => resolve('red-' + first + '-' + second));
+    async execute(bot: YamBot, first: string, second: number): Promise<string> {
+        return 'red-' + first + '-' + second;
     }
 }
 

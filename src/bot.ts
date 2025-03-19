@@ -55,7 +55,8 @@ export class YamBot {
             if (output.type === 'message') {
                 for (const message of output.content) {
                     if (message.type === 'output_text') {
-                        this.say?.(message.text);
+                        console.log(`Bot Message: ${message.text}`);
+                        // this.say?.(message.text);
                     }
                 }
             } else if (output.type === 'function_call') {
