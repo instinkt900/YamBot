@@ -1,3 +1,4 @@
 {
-    "instructions": "file:./resources/instructions.txt"
+    "instructions": "file:./resources/instructions.txt",
+    "dbPath": "./resources/memory.sqlite"
 }

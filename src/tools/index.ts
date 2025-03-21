@@ -1,9 +1,10 @@
 import { Tool } from 'openai/resources/responses/responses';
-import { GetTestTool } from './get_test';
 import { YamBot } from '../bot';
 import { DoNothingTool } from './do_nothing';
 import { TalkTool } from './talk';
 import { AddReminderTool, ClearRemindersTool, GetRemindersTool } from './reminder';
+import { TimeTool } from './get_time';
+import { ConvertUnixTimeTool } from './convert_time';
 
 export interface BotToolParameter {
     type: string;
@@ -17,9 +18,10 @@ export interface BotTool {
 }
 
 const activeTools: Record<string, BotTool> = {
-    // getTest: GetTestTool,
     doNothing: DoNothingTool,
     talk: TalkTool,
+    getTime: TimeTool,
+    convertTime: ConvertUnixTimeTool,
     addReminder: AddReminderTool,
     getReminders: GetRemindersTool,
     clearReminders: ClearRemindersTool

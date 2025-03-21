@@ -8,6 +8,9 @@ import {
 } from 'openai/resources/responses/responses';
 import { executeTool, getTools } from './tools';
 import { DynamicConfigFile } from './utils/config';
+import sqlite3 from 'sqlite3';
+import { Database, open } from 'sqlite';
+
 dotenv.config();
 
 const OPENAI_TOKEN = process.env['OPENAI_TOKEN']!;
@@ -17,6 +20,7 @@ const openai = new OpenAI({ apiKey: OPENAI_TOKEN });
 
 export class BotConfig extends DynamicConfigFile {
     instructions: string = '';
+    dbPath: string = '';
 
     constructor(configPath: string) {
         super(configPath);
@@ -27,6 +31,11 @@ export class BotConfig extends DynamicConfigFile {
 export class YamBot {
     private lastResponseId: string | undefined;
     private config: BotConfig;
+    private db?: Database;
+
+    get database() {
+        return this.db;
+    }
 
     say?: (str: string) => void;
 
@@ -39,12 +48,14 @@ export class YamBot {
             console.log(`config:`, this.config);
         });
         console.log(`config:`, this.config);
+        open({ filename: this.config.dbPath, driver: sqlite3.Database }).then((db) => (this.db = db));
     }
 
     prompt(input: string, userName?: string, instructions?: string): void {
         const data: ResponseCreateParamsNonStreaming = {
             model: AI_MODEL,
             tools: getTools(),
+            tool_choice: 'required',
             instructions: `${this.config.instructions}${instructions ? ' ' + instructions : ''}`,
             input: [
                 {
