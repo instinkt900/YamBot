@@ -11,7 +11,7 @@ class TalkToolImpl implements BotTool {
         };
     }
     async execute(bot: YamBot, message: string): Promise<string> {
-        bot.say?.(message);
+        bot.talk(message);
         return '';
     }
 }

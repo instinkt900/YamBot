@@ -21,6 +21,7 @@ const openai = new OpenAI({ apiKey: OPENAI_TOKEN });
 export class BotConfig extends DynamicConfigFile {
     instructions: string = '';
     dbPath: string = '';
+    conversation_timeout = 0;
 
     constructor(configPath: string) {
         super(configPath);
@@ -32,6 +33,7 @@ export class YamBot {
     private lastResponseId: string | undefined;
     private config: BotConfig;
     private db?: Database;
+    private silenceTimeout?: NodeJS.Timeout;
 
     get database() {
         return this.db;
@@ -72,6 +74,42 @@ export class YamBot {
         };
 
         console.log(`PROMPT: ${JSON.stringify(data)}`);
+        openai.responses.create(data).then((response) => this.handleResponse(response));
+    }
+
+    talk(message: string) {
+        this.say?.(message);
+        if (this.silenceTimeout) {
+            clearTimeout(this.silenceTimeout);
+        }
+        if (this.config.conversation_timeout) {
+            this.silenceTimeout = setTimeout(() => {
+                this.endConversation();
+            }, this.config.conversation_timeout * 1000);
+        }
+    }
+
+    private endConversation(): void {
+        const data: ResponseCreateParamsNonStreaming = {
+            model: AI_MODEL,
+            tools: getTools(),
+            tool_choice: 'required',
+            instructions: this.config.instructions,
+            input: [
+                {
+                    role: 'system',
+                    content: [
+                        {
+                            type: 'input_text',
+                            text: 'stop responding until mentioned by name again'
+                        }
+                    ]
+                }
+            ],
+            previous_response_id: this.lastResponseId
+        };
+
+        console.log(`silence: ${JSON.stringify(data)}`);
         openai.responses.create(data).then((response) => this.handleResponse(response));
     }
 
