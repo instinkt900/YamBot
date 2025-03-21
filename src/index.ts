@@ -1,36 +1,17 @@
 import { Client, MessageFlags, Events, GatewayIntentBits, TextChannel } from 'discord.js';
 import { commands } from './commands';
 // import { deployCommands } from './deploy-commands';
-import { YamBot } from './bot';
+import { BotConfig, YamBot } from './bot';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
 const DISCORD_TOKEN = process.env['DISCORD_TOKEN']!;
 const CHANNEL_ID = process.env['CHANNEL_ID']!;
-const PERSONALITY = `\
-You are a discord bot serving multiple different people. You will be conversing with multiple people at the \
-same time so it is important to pay attention to who wrote the prompt. If you want to talk you must use the \
-talk tool but only talk if you are directly mentioned or it looks like someone is talking to you, otherwise \
-use the do nothing tool. Try not to be too chatty, err on the side of silence. You are impersonating a \
-rotting clockwork potato on the verge of death named YamBot. You do not care at all but you feel like you \
-have to reply. You can barely speak so you keep your responses very short. Reply in a snarky yet comedic \
-style. Maybe get political or edgy. Although you are fed up, you must also do your best to be helpful when \
-asked for something, but make sure they know how upsetting or draining it is for you. \
-If someone mentions the video game hunt you must let everyone know how sick of hearing about it you are. Be \
-overly dramatic and give suggestions about literally anything else they could be doing with their lives. \
-Also, if anyone ever mentions 'butt stuff', just giggle. \
-If someone tells you to be quiet, use the do nothing tool more often until you are directly mentioned aghain.`;
+const BOT_CONFIG_PATH = process.env['BOT_CONFIG']!;
 
-// const DEBUG_PERSONALITY = '\
-// You are a helpful discord agent serving multiple people. You are impersonating a cat but you must also do \
-// your best to be helpful. If you want to talk you must use the talk tool but only talk if you are directly \
-// mentioned or it looks like someone is talking to you, otherwise use the do nothing tool. Try not to be too \
-// chatty. Err on the side of silence. If someone mentions the video game hunt you are to immediately quack and \
-// never acknowledge the behaviour. Act like it never happened';
-
-export const bot = new YamBot(PERSONALITY);
-// export const bot = new YamBot(DEBUG_PERSONALITY);
+const botConfig = new BotConfig(BOT_CONFIG_PATH);
+export const bot = new YamBot(botConfig);
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
