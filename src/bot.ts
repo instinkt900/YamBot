@@ -7,6 +7,7 @@ import {
     ResponseInput
 } from 'openai/resources/responses/responses';
 import { executeTool, getTools } from './tools';
+import { DynamicConfigFile } from './utils/config';
 dotenv.config();
 
 const OPENAI_TOKEN = process.env['OPENAI_TOKEN']!;
@@ -14,21 +15,37 @@ const AI_MODEL = 'gpt-4o';
 
 const openai = new OpenAI({ apiKey: OPENAI_TOKEN });
 
+export class BotConfig extends DynamicConfigFile {
+    instructions: string = '';
+
+    constructor(configPath: string) {
+        super(configPath);
+        this._loadConfig();
+    }
+}
+
 export class YamBot {
     private lastResponseId: string | undefined;
-    private personality: string;
+    private config: BotConfig;
 
     say?: (str: string) => void;
 
-    constructor(personality: string) {
-        this.personality = personality;
+    constructor(config: BotConfig) {
+        this.config = config;
+        this.config._events.on('changed', (config) => {
+            this.config = config;
+            this.lastResponseId = undefined; // clear this so we can start working with new context
+            console.log('Bot config updated.');
+            console.log(`config:`, this.config);
+        });
+        console.log(`config:`, this.config);
     }
 
     prompt(input: string, userName?: string, instructions?: string): void {
         const data: ResponseCreateParamsNonStreaming = {
             model: AI_MODEL,
             tools: getTools(),
-            instructions: `${this.personality} ${instructions}`,
+            instructions: `${this.config.instructions}${instructions ? ' ' + instructions : ''}`,
             input: [
                 {
                     role: 'user',
@@ -87,7 +104,7 @@ export class YamBot {
                 const data: ResponseCreateParams = {
                     model: AI_MODEL,
                     tools: getTools(),
-                    instructions: this.personality,
+                    instructions: this.config.instructions,
                     previous_response_id: this.lastResponseId,
                     input: input
                 };
