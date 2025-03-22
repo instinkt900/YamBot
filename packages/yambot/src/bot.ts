@@ -1,27 +1,26 @@
 import { OpenAI } from 'openai';
-import dotenv from 'dotenv';
 import {
     Response,
     ResponseCreateParams,
     ResponseCreateParamsNonStreaming,
-    ResponseInput
+    ResponseInput,
+    Tool
 } from 'openai/resources/responses/responses';
-import { executeTool, getTools } from './tools';
-import { DynamicConfigFile } from './utils/config';
+import { DynamicConfigFile } from './utils/config.js';
 import sqlite3 from 'sqlite3';
 import { Database, open } from 'sqlite';
-
-dotenv.config();
-
-const OPENAI_TOKEN = process.env['OPENAI_TOKEN']!;
-const AI_MODEL = 'gpt-4o';
-
-const openai = new OpenAI({ apiKey: OPENAI_TOKEN });
+import { DoNothingToolImpl } from './tools/do_nothing.js';
+import { TalkToolImpl } from './tools/talk.js';
+import { ToolPlugin } from './tools/tool_plugin.js';
+import { BotTool } from './tools/bot_tool.js';
+import path from 'path';
 
 export class BotConfig extends DynamicConfigFile {
+    model: string = 'gpt-4o';
     instructions: string = '';
     dbPath: string = '';
     conversation_timeout = 0;
+    plugins: string[] = [];
 
     constructor(configPath: string) {
         super(configPath);
@@ -30,10 +29,12 @@ export class BotConfig extends DynamicConfigFile {
 }
 
 export class YamBot {
+    private openai;
     private lastResponseId: string | undefined;
     private config: BotConfig;
     private db?: Database;
     private silenceTimeout?: NodeJS.Timeout;
+    private tools: Map<string, BotTool> = new Map();
 
     get database() {
         return this.db;
@@ -41,22 +42,19 @@ export class YamBot {
 
     say?: (str: string) => void;
 
-    constructor(config: BotConfig) {
+    constructor(config: BotConfig, openaiToken: string) {
+        this.openai = new OpenAI({ apiKey: openaiToken });
         this.config = config;
-        this.config._events.on('changed', (config) => {
-            this.config = config;
-            this.lastResponseId = undefined; // clear this so we can start working with new context
-            console.log('Bot config updated.');
-            console.log(`config:`, this.config);
+        this.config._events.on('changed', (_config) => {
+            this.onConfigChanged();
         });
-        console.log(`config:`, this.config);
-        open({ filename: this.config.dbPath, driver: sqlite3.Database }).then((db) => (this.db = db));
+        this.onConfigChanged();
     }
 
     prompt(input: string, userName?: string, instructions?: string): void {
         const data: ResponseCreateParamsNonStreaming = {
-            model: AI_MODEL,
-            tools: getTools(),
+            model: this.config.model,
+            tools: this.getTools(),
             tool_choice: 'required',
             instructions: `${this.config.instructions}${instructions ? ' ' + instructions : ''}`,
             input: [
@@ -74,7 +72,7 @@ export class YamBot {
         };
 
         console.log(`PROMPT: ${JSON.stringify(data)}`);
-        openai.responses.create(data).then((response) => this.handleResponse(response));
+        this.openai.responses.create(data).then((response) => this.handleResponse(response));
     }
 
     talk(message: string) {
@@ -89,10 +87,77 @@ export class YamBot {
         }
     }
 
+    private onConfigChanged() {
+        const dbPath = path.resolve(this.config._getBaseDir(), this.config.dbPath);
+        open({ filename: dbPath, driver: sqlite3.Database }).then((db) => (this.db = db));
+        this.initTools();
+        this.lastResponseId = undefined; // clear this so we can start working with new context
+        console.log('Bot config updated.');
+        console.log(this.config);
+    }
+
+    private initTools() {
+        this.tools.clear();
+
+        this.tools.set('do_nothing', new DoNothingToolImpl());
+        this.tools.set('talk', new TalkToolImpl());
+
+        for (const pluginName of this.config.plugins) {
+            import(pluginName).then((module: any) => {
+                console.log(module.plugin);
+                console.log(module.plugin.getPlugins);
+                console.log(module.plugin.getPlugins());
+                const plugin = module.plugin as ToolPlugin;
+                const pluginTools = plugin.getPlugins();
+                for (const [name, tool] of Object.entries(pluginTools)) {
+                    this.tools.set(name, tool);
+                }
+            });
+        }
+    }
+
+    private getTools(): Array<Tool> {
+        const tools = new Array<Tool>();
+        for (const [toolName, tool] of this.tools.entries()) {
+            tools.push({
+                type: 'function',
+                name: toolName,
+                parameters: {
+                    type: 'object',
+                    properties: tool.parameters,
+                    required: Object.keys(tool.parameters),
+                    additionalProperties: false
+                },
+                strict: true,
+                description: tool.description
+            });
+        }
+        return tools;
+    }
+
+    async executeTool(toolName: string, args: { [key: string]: any }): Promise<string> {
+        const tool = this.tools.get(toolName);
+        if (tool) {
+            const params = [];
+            for (const paramName of Object.keys(tool.parameters)) {
+                const parameterValue = args[paramName];
+                if (parameterValue == undefined) {
+                    console.log(
+                        `Tried calling tool ${toolName} with incorrect parameters. Got ${JSON.stringify(args)}`
+                    );
+                    return '';
+                }
+                params.push(args[paramName]);
+            }
+            return tool.execute(this, ...params);
+        }
+        console.log(`Unknown tool call: ${toolName}`);
+        return '';
+    }
     private endConversation(): void {
         const data: ResponseCreateParamsNonStreaming = {
-            model: AI_MODEL,
-            tools: getTools(),
+            model: this.config.model,
+            tools: this.getTools(),
             tool_choice: 'required',
             instructions: this.config.instructions,
             input: [
@@ -110,7 +175,7 @@ export class YamBot {
         };
 
         console.log(`silence: ${JSON.stringify(data)}`);
-        openai.responses.create(data).then((response) => this.handleResponse(response));
+        this.openai.responses.create(data).then((response) => this.handleResponse(response));
     }
 
     private handleResponse(response: Response): void {
@@ -128,7 +193,7 @@ export class YamBot {
             } else if (output.type === 'function_call') {
                 console.log(`function call ${output.name}`);
                 const params = JSON.parse(output.arguments);
-                const result = executeTool(this, output.name, params);
+                const result = this.executeTool(output.name, params);
                 if (result) {
                     functionCalls.push({
                         callId: output.call_id,
@@ -151,14 +216,14 @@ export class YamBot {
                     });
                 });
                 const data: ResponseCreateParams = {
-                    model: AI_MODEL,
-                    tools: getTools(),
+                    model: this.config.model,
+                    tools: this.getTools(),
                     instructions: this.config.instructions,
                     previous_response_id: this.lastResponseId,
                     input: input
                 };
                 console.log(`PROMPT: ${JSON.stringify(data)}`);
-                openai.responses.create(data).then((response) => this.handleResponse(response));
+                this.openai.responses.create(data).then((response) => this.handleResponse(response));
             });
         }
     }

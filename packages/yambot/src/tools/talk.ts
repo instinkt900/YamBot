@@ -1,7 +1,7 @@
-import { BotTool, BotToolParameter } from '.';
-import { YamBot } from '../bot';
+import { BotTool, BotToolParameter } from './bot_tool.js';
+import { YamBot } from '../bot.js';
 
-class TalkToolImpl implements BotTool {
+export class TalkToolImpl implements BotTool {
     get description(): string {
         return 'says something in the channel';
     }
@@ -15,5 +15,3 @@ class TalkToolImpl implements BotTool {
         return '';
     }
 }
-
-export const TalkTool = new TalkToolImpl();

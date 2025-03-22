@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { EventEmitter } from 'stream';
+import { EventEmitter } from 'events';
 
 export class DynamicConfigFile {
     private _configPath: string;
@@ -10,6 +10,10 @@ export class DynamicConfigFile {
 
     constructor(configPath: string) {
         this._configPath = configPath;
+    }
+
+    _getBaseDir(): string {
+        return path.dirname(this._configPath);
     }
 
     protected _loadConfig() {

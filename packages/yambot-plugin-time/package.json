@@ -1,0 +1,30 @@
+{
+    "name": "yambot-plugin-time",
+    "version": "0.0.1",
+    "description": "",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "sideEffects": false,
+    "scripts": {
+        "clean": "rimraf ./dist",
+        "build": "tsc",
+        "rebuild": "npm run clean && npm run build",
+        "lint": "eslint src"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "yambot": "*"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.22.0",
+        "eslint": "^9.22.0",
+        "eslint-config-prettier": "^10.1.1",
+        "eslint-plugin-prettier": "^5.2.3",
+        "jiti": "^2.4.2",
+        "rimraf": "^6.0.1",
+        "typescript": "^5.8.2",
+        "typescript-eslint": "^8.26.1"
+    }
+}

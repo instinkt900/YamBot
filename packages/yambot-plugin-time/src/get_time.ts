@@ -1,7 +1,6 @@
-import { BotTool, BotToolParameter } from '.';
-import { YamBot } from '../bot';
+import { YamBot, BotTool, BotToolParameter } from 'yambot';
 
-class GetTimeToolImpl implements BotTool {
+export class GetTimeTool implements BotTool {
     get description(): string {
         return 'gets the current time as unix epoch time';
     }
@@ -12,5 +11,3 @@ class GetTimeToolImpl implements BotTool {
         return `${Date.now() / 1000}`;
     }
 }
-
-export const TimeTool = new GetTimeToolImpl();

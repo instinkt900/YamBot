@@ -1,17 +1,17 @@
-import { Client, MessageFlags, Events, GatewayIntentBits, TextChannel } from 'discord.js';
-import { commands } from './commands';
-// import { deployCommands } from './deploy-commands';
-import { BotConfig, YamBot } from './bot';
+import 'source-map-support/register.js';
+import { Client, Events, GatewayIntentBits, TextChannel } from 'discord.js';
+import { YamBot, BotConfig } from 'yambot';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
+const OPENAI_TOKEN = process.env['OPENAI_TOKEN']!;
 const DISCORD_TOKEN = process.env['DISCORD_TOKEN']!;
 const CHANNEL_ID = process.env['CHANNEL_ID']!;
 const BOT_CONFIG_PATH = process.env['BOT_CONFIG']!;
 
 const botConfig = new BotConfig(BOT_CONFIG_PATH);
-export const bot = new YamBot(botConfig);
+export const bot = new YamBot(botConfig, OPENAI_TOKEN);
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
@@ -28,35 +28,6 @@ client.on(Events.ClientReady, async (readyClient) => {
             botChannel.send(str);
         };
     }
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
-
-    const command = commands[interaction.commandName];
-
-    if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
-        return;
-    }
-
-    try {
-        await command.execute(bot, interaction);
-    } catch (error) {
-        console.error(error);
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({
-                content: 'There was an error while executing this command!',
-                flags: MessageFlags.Ephemeral
-            });
-        } else {
-            await interaction.reply({
-                content: 'There was an error while executing this command!',
-                flags: MessageFlags.Ephemeral
-            });
-        }
-    }
-    console.log(interaction);
 });
 
 client.on(Events.MessageCreate, async (message) => {

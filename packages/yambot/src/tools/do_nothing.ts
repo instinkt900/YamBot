@@ -1,7 +1,7 @@
-import { BotTool, BotToolParameter } from '.';
-import { YamBot } from '../bot';
+import { BotTool, BotToolParameter } from './bot_tool.js';
+import { YamBot } from '../bot.js';
 
-class DoNothingToolImpl implements BotTool {
+export class DoNothingToolImpl implements BotTool {
     get description(): string {
         return 'does nothing';
     }
@@ -12,5 +12,3 @@ class DoNothingToolImpl implements BotTool {
         return '';
     }
 }
-
-export const DoNothingTool = new DoNothingToolImpl();
