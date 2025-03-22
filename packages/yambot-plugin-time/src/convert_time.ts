@@ -1,7 +1,6 @@
-import { BotTool, BotToolParameter } from './bot_tool';
-import { YamBot } from '../bot';
+import { YamBot, BotTool, BotToolParameter } from 'yambot';
 
-class ConvertUnixTimeToolImpl implements BotTool {
+export class ConvertUnixTimeTool implements BotTool {
     get description(): string {
         return 'converts the unix time to a human readable format';
     }
@@ -15,4 +14,3 @@ class ConvertUnixTimeToolImpl implements BotTool {
     }
 }
 
-export const ConvertUnixTimeTool = new ConvertUnixTimeToolImpl();

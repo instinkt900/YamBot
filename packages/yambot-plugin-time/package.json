@@ -1,26 +1,21 @@
 {
-    "name": "yambot-discord",
+    "name": "yambot-plugin-time",
     "version": "0.0.1",
-    "description": "A yambot implementation for discord servers.",
+    "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "type": "module",
+    "sideEffects": false,
     "scripts": {
         "clean": "rimraf ./dist",
         "build": "tsc",
         "rebuild": "npm run clean && npm run build",
         "lint": "eslint src"
     },
-    "author": "Matthew Cotton",
+    "author": "",
     "license": "ISC",
     "dependencies": {
-        "discord.js": "^14.18.0",
-        "dotenv": "^16.4.7",
-        "source-map-support": "^0.5.21",
-        "yambot": "*",
-        "yambot-tool-reminders": "*",
-        "yambot-tool-game-mentions": "*",
-        "yambot-plugin-time": "*"
+        "yambot": "*"
     },
     "devDependencies": {
         "@eslint/js": "^9.22.0",
