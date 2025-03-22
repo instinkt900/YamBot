@@ -1,3 +1,5 @@
 {
-    "instructions": "file:./resources/instructions.txt"
+    "instructions": "file:./bot_data/instructions.txt",
+    "dbPath": "./bot_data/memory.sqlite",
+    "conversation_timeout": 30
 }

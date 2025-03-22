@@ -1,9 +1,11 @@
 import { Tool } from 'openai/resources/responses/responses';
-import { GetTestTool } from './get_test';
 import { YamBot } from '../bot';
 import { DoNothingTool } from './do_nothing';
 import { TalkTool } from './talk';
 import { AddReminderTool, ClearRemindersTool, GetRemindersTool } from './reminder';
+import { TimeTool } from './get_time';
+import { ConvertUnixTimeTool } from './convert_time';
+import { AddGameMentionTool, GetGameMentionsTool, RemoveGameMentionTool } from './games';
 
 export interface BotToolParameter {
     type: string;
@@ -17,12 +19,16 @@ export interface BotTool {
 }
 
 const activeTools: Record<string, BotTool> = {
-    // getTest: GetTestTool,
     doNothing: DoNothingTool,
     talk: TalkTool,
+    getTime: TimeTool,
+    convertTime: ConvertUnixTimeTool,
     addReminder: AddReminderTool,
     getReminders: GetRemindersTool,
-    clearReminders: ClearRemindersTool
+    clearReminders: ClearRemindersTool,
+    addGameMention: AddGameMentionTool,
+    removeGameMention: RemoveGameMentionTool,
+    getGameMentions: GetGameMentionsTool
 };
 
 export function getTools(): Array<Tool> {
@@ -54,7 +60,7 @@ export async function executeTool(
         const params = [];
         for (const paramName of Object.keys(tool.parameters)) {
             const parameterValue = args[paramName];
-            if (!parameterValue) {
+            if (parameterValue == undefined) {
                 console.log(
                     `Tried calling tool ${toolName} with incorrect parameters. Got ${JSON.stringify(args)}`
                 );
