@@ -5,6 +5,7 @@ import { TalkTool } from './talk';
 import { AddReminderTool, ClearRemindersTool, GetRemindersTool } from './reminder';
 import { TimeTool } from './get_time';
 import { ConvertUnixTimeTool } from './convert_time';
+import { AddGameMentionTool, GetGameMentionsTool, RemoveGameMentionTool } from './games';
 
 export interface BotToolParameter {
     type: string;
@@ -24,7 +25,10 @@ const activeTools: Record<string, BotTool> = {
     convertTime: ConvertUnixTimeTool,
     addReminder: AddReminderTool,
     getReminders: GetRemindersTool,
-    clearReminders: ClearRemindersTool
+    clearReminders: ClearRemindersTool,
+    addGameMention: AddGameMentionTool,
+    removeGameMention: RemoveGameMentionTool,
+    getGameMentions: GetGameMentionsTool
 };
 
 export function getTools(): Array<Tool> {
@@ -56,7 +60,7 @@ export async function executeTool(
         const params = [];
         for (const paramName of Object.keys(tool.parameters)) {
             const parameterValue = args[paramName];
-            if (!parameterValue) {
+            if (parameterValue == undefined) {
                 console.log(
                     `Tried calling tool ${toolName} with incorrect parameters. Got ${JSON.stringify(args)}`
                 );
