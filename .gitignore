@@ -2,4 +2,5 @@ bot_data/
 node_modules/
 dist/
 .env
+*.tsbuildinfo
 

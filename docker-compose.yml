@@ -7,6 +7,5 @@ services:
       dockerfile: ./Dockerfile
     volumes:
       - ./.env:/yambot/.env
-      - ./config.json:/yambot/config.json
-      - ./resources:/yambot/resources
+      - ./bot_data:/yambot/bot_data
 

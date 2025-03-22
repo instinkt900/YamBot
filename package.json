@@ -1,33 +1,13 @@
 {
-    "name": "junkdiscordbot",
+    "name": "yambot",
     "version": "0.0.1",
-    "description": "",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "sideEffects": false,
+    "private": true,
     "scripts": {
-        "clean": "rimraf ./dist",
-        "build": "tsc",
-        "rebuild": "npm run clean && npm run build",
-        "lint": "eslint src"
+        "build": "tsc -b packages/*",
+        "clean": "rm -rf packages/*/dist",
+        "start": "node packages/yambot-discord"
     },
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "discord.js": "^14.18.0",
-        "dotenv": "^16.4.7",
-        "openai": "^4.87.3",
-        "sqlite": "^5.1.1",
-        "sqlite3": "^5.1.7"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.22.0",
-        "eslint": "^9.22.0",
-        "eslint-config-prettier": "^10.1.1",
-        "eslint-plugin-prettier": "^5.2.3",
-        "jiti": "^2.4.2",
-        "rimraf": "^6.0.1",
-        "typescript": "^5.8.2",
-        "typescript-eslint": "^8.26.1"
-    }
+    "workspaces": [
+        "packages/*"
+    ]
 }

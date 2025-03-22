@@ -1,4 +1,5 @@
-dist/
+packages/*/dist/
+bot_data/
 resources/
 node_modules/
 .env
